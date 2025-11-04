@@ -13,6 +13,7 @@ const appointmentRoutes = require('./appointments');
 const focusSessionRoutes = require('./focusSessions');
 const progressRoutes = require('./progress');
 const aiRoutes = require('./ai');
+const roleRoutes = require('./roles');
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ router.get('/', (req, res) => {
   res.json({
     name: 'MindSpark API',
     version: '1.0.0',
-    description: 'Backend API for MindSpark ADHD support application',
+    description: 'Backend API for MindSpark ADHD support application with RBAC',
     documentation: '/api/docs',
     endpoints: {
       auth: '/api/auth',
@@ -37,7 +38,11 @@ router.get('/', (req, res) => {
       appointments: '/api/appointments',
       'focus-sessions': '/api/focus-sessions',
       progress: '/api/progress',
-      ai: '/api/ai'
+      ai: '/api/ai',
+      roles: '/api/roles',
+      parents: '/api/parents',
+      mentors: '/api/mentors',
+      admin: '/api/admin'
     },
     timestamp: new Date().toISOString()
   });
@@ -54,6 +59,9 @@ router.use('/specialists', specialistRoutes);
 router.use('/appointments', appointmentRoutes);
 router.use('/focus-sessions', focusSessionRoutes);
 router.use('/progress', progressRoutes);
-router.use('/ai', aiRoutes);
+router.use('/ai', aiRoutes.router);
+
+// RBAC routes
+router.use('/', roleRoutes);
 
 module.exports = router;

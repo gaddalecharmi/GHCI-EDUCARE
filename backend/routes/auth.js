@@ -6,8 +6,10 @@ const { pool } = require('../config/database');
 const { authenticateToken, authRateLimit } = require('../middleware/auth');
 const { validate, registerSchema, loginSchema, profileUpdateSchema } = require('../middleware/validation');
 const config = require('../config');
+const User = require('../models/User');
 
 const router = express.Router();
+const userModel = new User(pool);
 
 // Helper function to generate JWT
 const generateToken = (user) => {
@@ -21,7 +23,11 @@ const generateToken = (user) => {
 // Register new user
 router.post('/register', authRateLimit, validate(registerSchema), async (req, res) => {
   try {
-    const { email, password, username, dateOfBirth, parentEmail } = req.validatedData;
+    const { email, password, username, dateOfBirth, parentEmail, role } = req.validatedData;
+    
+    // Validate role if provided
+    const validRoles = ['student', 'parent', 'mentor'];
+    const selectedRole = role && validRoles.includes(role) ? role : 'student';
     
     // Check if user already exists
     const existingUser = await pool.query(
@@ -48,6 +54,25 @@ router.post('/register', authRateLimit, validate(registerSchema), async (req, re
     `, [userId, email, username, hashedPassword, dateOfBirth, parentEmail]);
     
     const user = newUser.rows[0];
+    
+    // Assign the selected role to the user
+    await userModel.assignRole(user.id, selectedRole);
+    
+    // Get user roles and permissions
+    const roles = await userModel.getUserRoles(user.id);
+    const permissions = await userModel.getUserPermissions(user.id);
+    
+    // Log registration activity
+    await userModel.logActivity(
+      user.id,
+      'user_registered',
+      'profiles',
+      user.id,
+      { role: selectedRole },
+      req.ip,
+      req.headers['user-agent']
+    );
+    
     const token = generateToken(user);
     
     res.status(201).json({
@@ -58,7 +83,9 @@ router.post('/register', authRateLimit, validate(registerSchema), async (req, re
         email: user.email,
         username: user.username,
         points: user.points,
-        level: user.level
+        level: user.level,
+        roles: roles.map(r => r.name),
+        permissions: permissions.map(p => p.name)
       },
       token
     });
@@ -103,10 +130,25 @@ router.post('/login', authRateLimit, validate(loginSchema), async (req, res) => 
       });
     }
     
+    // Get user roles and permissions
+    const roles = await userModel.getUserRoles(user.id);
+    const permissions = await userModel.getUserPermissions(user.id);
+    
     // Update last activity
     await pool.query(
       'UPDATE profiles SET last_activity = NOW() WHERE id = $1',
       [user.id]
+    );
+    
+    // Log login activity
+    await userModel.logActivity(
+      user.id,
+      'user_login',
+      'profiles',
+      user.id,
+      {},
+      req.ip,
+      req.headers['user-agent']
     );
     
     const token = generateToken(user);
@@ -121,7 +163,9 @@ router.post('/login', authRateLimit, validate(loginSchema), async (req, res) => 
         points: user.points,
         level: user.level,
         avatar_url: user.avatar_url,
-        streak_days: user.streak_days
+        streak_days: user.streak_days,
+        roles: roles.map(r => r.name),
+        permissions: permissions.map(p => p.name)
       },
       token
     });

@@ -1,14 +1,8 @@
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
 const compression = require('compression');
-
-// Database connection
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-});
+const { pool } = require('../config/database');
 
 // Logging middleware
 const requestLogger = morgan('combined', {

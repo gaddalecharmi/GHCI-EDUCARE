@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
+require('dotenv').config();
 
 // Database connection
 const pool = new Pool({
@@ -19,18 +20,18 @@ const seedData = async () => {
     // 1. Seed document categories
     console.log('📁 Seeding document categories...');
     const categories = [
-      { name: 'Homework', description: 'School assignments and homework', color: '#FF6B6B' },
-      { name: 'Notes', description: 'Personal notes and study materials', color: '#4ECDC4' },
-      { name: 'Reading', description: 'Reading materials and books', color: '#45B7D1' },
-      { name: 'Resources', description: 'Educational resources and references', color: '#96CEB4' },
-      { name: 'Projects', description: 'Long-term projects and assignments', color: '#FFA07A' },
-      { name: 'Worksheets', description: 'Practice worksheets and exercises', color: '#98D8C8' }
+      { name: 'Homework', color: '#FF6B6B' },
+      { name: 'Notes', color: '#4ECDC4' },
+      { name: 'Reading', color: '#45B7D1' },
+      { name: 'Resources', color: '#96CEB4' },
+      { name: 'Projects', color: '#FFA07A' },
+      { name: 'Worksheets', color: '#98D8C8' }
     ];
     
     for (const category of categories) {
       await client.query(
-        'INSERT INTO document_categories (name, description, color) VALUES ($1, $2, $3) ON CONFLICT (name) DO NOTHING',
-        [category.name, category.description, category.color]
+        'INSERT INTO document_categories (name, color) VALUES ($1, $2) ON CONFLICT (name) DO NOTHING',
+        [category.name, category.color]
       );
     }
     
@@ -94,42 +95,35 @@ const seedData = async () => {
     const chatRooms = [
       {
         name: 'General Chat',
-        description: 'General discussion for everyone in the community',
-        room_type: 'public'
+        description: 'General discussion for everyone in the community'
       },
       {
         name: 'Study Group',
-        description: 'Study together and share learning tips',
-        room_type: 'public'
+        description: 'Study together and share learning tips'
       },
       {
         name: 'Parents Corner',
-        description: 'Support group for parents and guardians',
-        room_type: 'public'
+        description: 'Support group for parents and guardians'
       },
       {
         name: 'Homework Help',
-        description: 'Get help with homework and assignments',
-        room_type: 'public'
+        description: 'Get help with homework and assignments'
       },
       {
         name: 'Focus & Mindfulness',
-        description: 'Share mindfulness techniques and focus strategies',
-        room_type: 'public'
+        description: 'Share mindfulness techniques and focus strategies'
       },
       {
         name: 'Gaming Zone',
-        description: 'Discuss games and share high scores',
-        room_type: 'public'
+        description: 'Discuss games and share high scores'
       }
     ];
     
     for (const room of chatRooms) {
       await client.query(`
-        INSERT INTO chat_rooms (name, description, room_type, is_active, max_participants)
-        VALUES ($1, $2, $3, true, 50)
-        ON CONFLICT (name) DO NOTHING
-      `, [room.name, room.description, room.room_type]);
+        INSERT INTO chat_rooms (name, description, is_active)
+        VALUES ($1, $2, true)
+      `, [room.name, room.description]);
     }
     
     // 4. Seed achievements
